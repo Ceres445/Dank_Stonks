@@ -1,7 +1,6 @@
 from discord.ext import commands
 from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB
 from cogs.utils.DataBase.guild import User
-from typing import Optional
 import discord
 
 
@@ -25,6 +24,12 @@ class Trade(commands.Cog):
         query_obj = ItemDB(self.bot, "sell", item, quantity, price, ctx.author.id)
         uid = await query_obj.add()
         await ctx.send(f"your product has been listed id: {uid}")
+
+    @market.command()
+    async def remove(self, ctx, uid: str = None):
+        user = User(ctx.guild, self.bot, ctx.author)
+        await user.remove_listing(uid)
+        await ctx.send("removed listing")
 
     @commands.command()
     async def list(self, ctx, members: commands.Greedy[discord.Member] = None, *args):

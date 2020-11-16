@@ -1,5 +1,6 @@
 from discord.ext import commands
 import discord
+from discord.ext.commands.errors import BadArgument
 
 
 class Guild:
@@ -43,3 +44,12 @@ class User:
             query = "SELECT * FROM listed_items where $1 = user_id "
             listings = await self.bot.db.fetch(query, self.user.id)
         return listings
+
+    async def remove_listing(self, uid: str):
+        listings = await self.get_listings('all')
+        if uid in [i['code'] for i in listings]:
+            query = "DELETE FROM listed_items WHERE code=$1"
+            await self.bot.db.execute(query, uid)
+            return
+        else:
+            raise BadArgument
