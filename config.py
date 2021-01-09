@@ -2,6 +2,7 @@ import os
 from dotenv import load_dotenv
 import datetime
 
+
 def load_vars():
     try:
         postgres = os.environ['DATABASE_URL']

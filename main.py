@@ -33,6 +33,7 @@ class StonksBot(commands.AutoShardedBot):
     async def on_connect(self):
         try:
             self.db = await Database.create_pool(bot=self, uri=postgres, loop=self.loop)
+            print("connected to DB")
         except OSError:
             print("postgres server is not running")
 
