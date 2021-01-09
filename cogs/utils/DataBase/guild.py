@@ -4,10 +4,11 @@ import discord
 from discord.ext.commands.errors import BadArgument
 
 from cogs.utils.DataBase.Items import Item
+from main import StonksBot
 
 
 class Guild:
-    def __init__(self, guild, bot):
+    def __init__(self, guild: discord.Guild, bot: StonksBot):
         self.bot = bot
         self.guild = guild
         self.prefix, self.staff, self.trade, self.promo = None, None, None, None
@@ -48,8 +49,16 @@ class Filter:
                    f" and list_type = $1 and user_id = $2 ORDER BY {self.order_by} {self.order_type}"
 
 
-def calc_trust(new_worth, new_trade):
-    return max(int(math.log10(new_worth / 1e5)), int(math.log10(new_trade)))
+def calc_trust(new_worth, new_trade, trust):
+    if trust == 10:
+        return 10
+    x = int(math.log10(new_worth / 1e5))
+    if x >= 10:
+        return 9
+    y = int(math.log10(new_trade))
+    if y >= 10:
+        return 9
+    return max(x, y)
 
 
 class User:
@@ -72,7 +81,7 @@ class User:
             await self.bot.db.execute(query, record['quantity'] - quantity, self.user.id)
             update = f"New quantity {record['quantity'] - quantity} for {item}"
         query = "UPDATE user_data set trades = $1, worth = $2, trust = $3 WHERE user_id = $1"
-        trust = calc_trust(self.data['worth'] + amount, self.data['trades'] + 1)
+        trust = calc_trust(self.data['worth'] + amount, self.data['trades'] + 1, self.data['trust'])
         await self.bot.db.execute(query, self.data['trust'], self.data['worth'], trust, self.user.id)
         await self.get_data()
         return update
@@ -83,17 +92,17 @@ class User:
 
     async def get_data(self):
         query = "SELECT * FROM user_data WHERE user_id = $1"
-        user = self.bot.db.fetchrow(query, self.user.id)
+        user = await self.bot.db.fetchrow(query, self.user.id)
         if user is None:
             await self.create_user()
-            user = self.bot.db.fetchrow(query, self.user.id)
+            user = await self.bot.db.fetchrow(query, self.user.id)
         if self.guild.id not in user['guilds']:
             query = "UPDATE user_data set guilds = $1 WHERE user_id= $2"
             await self.bot.db.execute(query, user['guilds'] + [self.guild.id], self.user.id)
         self.data = user
         await self.get_listings()
 
-    async def get_listings(self, list_type: str = 'all', fil: Filter = Filter(None)):
+    async def get_listings(self, list_type: str = 'all', fil: Filter = Filter(None, user_id=1)):
         if list_type != "all":
             query = fil.query_gen()
             listings = await self.bot.db.fetch(query, list_type, self.user.id)

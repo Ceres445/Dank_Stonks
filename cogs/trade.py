@@ -4,6 +4,7 @@ from discord.ext.commands import BadArgument
 
 from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id
 from cogs.utils.DataBase.guild import User, Filter
+from cogs.utils.checks import is_staff, is_trusted
 
 
 def to_lower(text):
@@ -113,7 +114,7 @@ class Trade(commands.Cog):
         record = ItemDB.get_listing(ctx, uid)
         await ctx.send(record)
 
-    @commands.check_any(is_trusted, is_staff)
+    @commands.check_any(commands.check(is_trusted), commands.check(is_staff))
     @commands.command()
     async def complete(self, ctx, traders: commands.Greedy[discord.Member], item: Item, total: convert_quantity,
                        quantity: convert_quantity = 1):
@@ -127,6 +128,7 @@ class Trade(commands.Cog):
     async def cog_command_error(self, ctx, error):
         if isinstance(error, BadArgument):
             await ctx.send(error)
+        # TODO: embedify errors
 
 
 def setup(bot):

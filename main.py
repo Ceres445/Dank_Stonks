@@ -19,7 +19,7 @@ async def get_prefix(bot, message):
 
 class StonksBot(commands.AutoShardedBot):
     def __init__(self):
-        intents = discord.Intents(messages=True, guilds=True, reactions = True)
+        intents = discord.Intents(messages=True, guilds=True, reactions=True)
         super().__init__(command_prefix=get_prefix, case_insensitive=True,
                          allowed_mentions=discord.AllowedMentions(everyone=False, roles=True, users=True),
                          intents=intents)
