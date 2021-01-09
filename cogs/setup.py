@@ -1,8 +1,10 @@
-from discord.ext import commands
-from cogs.utils.DataBase.guild import Guild
-import discord
 from typing import Dict
+
+import discord
+from discord.ext import commands
 from discord.ext import menus
+
+from cogs.utils.DataBase.guild import Guild
 
 
 class channel_menu(menus.Menu):
@@ -133,7 +135,7 @@ class Setup(commands.Cog):
         else:
             await ctx.send("I do not have this prefix registered.")
 
-    @prefix.command()
+    @prefix.command(aliases=['make'])
     async def set(self, ctx, prefix: str):
         guild = Guild(ctx.guild, self.bot)
         await guild.set_attribute("prefix", [prefix])
