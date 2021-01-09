@@ -49,7 +49,7 @@ class Filter:
 
 
 def calc_trust(new_worth, new_trade):
-    return max(int(math.log10(new_worth/1e5)), int(math.log10(new_trade)))
+    return max(int(math.log10(new_worth / 1e5)), int(math.log10(new_trade)))
 
 
 class User:
@@ -68,12 +68,12 @@ class User:
             update = "No item in listing"
         else:
             record = self.data[records.index(item.item_id)]
-            query = "UPDATE listed_items set quantity = $1"
-            await self.bot.db.execute(query, record['quantity'] - quantity)
+            query = "UPDATE listed_items set quantity = $1 WHERE user_id = $2"
+            await self.bot.db.execute(query, record['quantity'] - quantity, self.user.id)
             update = f"New quantity {record['quantity'] - quantity} for {item}"
-        query = "UPDATE user_data set trades = $1, worth = $2, trust = $3"
+        query = "UPDATE user_data set trades = $1, worth = $2, trust = $3 WHERE user_id = $1"
         trust = calc_trust(self.data['worth'] + amount, self.data['trades'] + 1)
-        await self.bot.db.execute(query, self.data['trust'], self.data['worth'], trust)
+        await self.bot.db.execute(query, self.data['trust'], self.data['worth'], trust, self.user.id)
         await self.get_data()
         return update
 
@@ -92,7 +92,6 @@ class User:
             await self.bot.db.execute(query, user['guilds'] + [self.guild.id], self.user.id)
         self.data = user
         await self.get_listings()
-
 
     async def get_listings(self, list_type: str = 'all', fil: Filter = Filter(None)):
         if list_type != "all":

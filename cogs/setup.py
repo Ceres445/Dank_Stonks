@@ -86,7 +86,7 @@ class Setup(commands.Cog):
         guild = Guild(ctx.guild, self.bot)
         await guild.get_data()
         await guild.set_attribute('staff', [staff.id])
-        await ctx.send(f"Succesfully set staff role to {staff.name}")
+        await ctx.send(f"Successfully set staff role to {staff.name}")
 
     @setup.command()
     async def channel(self, ctx):
@@ -94,12 +94,12 @@ class Setup(commands.Cog):
         m = await channel_menu(ctx).starter(ctx)
         if m['promo'] is not None:
             await guild.set_attribute('promo', m['promo'].id)
-            await ctx.send(f"Succesfully set promo to <#{m['promo']}>")
+            await ctx.send(f"Successfully set promo to <#{m['promo']}>")
         if m['trade'] is not None:
 
             await guild.set_attribute('trade', [a.id for a in m['trade']])
             trade_mention = [f"<#{i}>" for i in m['trade']]
-            await ctx.send(f"Succesfully set trade to {trade_mention}")
+            await ctx.send(f"Successfully set trade to {trade_mention}")
 
     @commands.group(name='prefix', invoke_without_command=True)
     async def prefix(self, ctx):
@@ -117,7 +117,7 @@ class Setup(commands.Cog):
         guild = Guild(ctx.guild, self.bot)
         await guild.get_data()
         if new in guild.prefix:
-            await ctx.send("thats already a prefix :/")
+            await ctx.send("that's already a prefix :/")
             return
         else:
             await guild.set_attribute("prefix", guild.prefix + [new])
