@@ -123,6 +123,13 @@ class User:
             raise BadArgument
 
     async def get_items(self, list_type, fil: Filter = Filter(None)):
+        if self.data is None:
+            await self.get_data()
         query = fil.query_gen()
-        listings = await self.bot.db.fetch(query, list_type)
-        return listings
+        if list_type != 'all':
+            listings = await self.bot.db.fetch(query, list_type)
+            return listings
+        else:
+            listings = await self.bot.db.fetch(query, "sell")
+            listings += await self.bot.db.fetch(query, "buy")
+            return listings

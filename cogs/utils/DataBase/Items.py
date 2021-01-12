@@ -3,7 +3,7 @@ from datetime import datetime
 
 from discord.ext.commands.errors import BadArgument, CommandError
 
-with open("cogs/utils//DataBase/json_files/items.json", "r") as f:
+with open("cogs/utils//json_files/items.json", "r") as f:
     items = json.load(f)
 items = dict(items)
 
@@ -77,12 +77,13 @@ def convert_quantity(text: str) -> int:
 
 
 class ItemDB:
-    def __init__(self, bot, item, data, code=None, time=None):
+    def __init__(self, bot, item, data, code=None, time=None, record=None):
         self.bot = bot
         self.item_code = item.item_id
         self.data = data
         self.code = code
         self.time = time
+        self.record = record
 
     async def get_code(self):
         codes = await self.bot.db.fetch("SELECT DISTINCT code FROM listed_items ORDER BY code ASC ")
@@ -100,7 +101,7 @@ class ItemDB:
             listing = await ctx.cog.bot.db.fetchrow("SELECT * FROM listed_items WHERE code = $1", code)
             return cls(ctx.cog.bot, Item.get_item_id(ctx, listing['item_code']),
                        [listing['quantity'], listing['price'], listing['user_id'], listing['list_type']], code,
-                       listing['time'])
+                       listing['time'], record=listing)
         else:
             raise BadArgument
 

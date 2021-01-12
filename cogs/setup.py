@@ -96,7 +96,7 @@ class Setup(commands.Cog):
         m = await channel_menu(ctx).starter(ctx)
         if m['promo'] is not None:
             await guild.set_attribute('promo', m['promo'].id)
-            await ctx.send(f"Successfully set promo to <#{m['promo']}>")
+            await ctx.send(f"Successfully set promo to <#   {m['promo'].mention}>")
         if m['trade'] is not None:
 
             await guild.set_attribute('trade', [a.id for a in m['trade']])

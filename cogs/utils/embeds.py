@@ -8,8 +8,8 @@ import discord
 def listings_embed(listings, author: discord.Member):
     desc = ""
     for listing in listings:
-        desc += f"**ID: {listing['code']} -- {items[listing['item_code']]}** -- \u2014 [\u2303 {int(listing['price']):,}]" \
-                f"(https://www.youtube.com/watch?v=_BD140nCDps) - {int(listing['quantity'])} nos\n\n "
+        desc += f"**ID: {listing['code']} \u2014 {list(items.keys())[listing['item_code']]}**  \u2014 [\u23e3 {int(listing['price']):,}]" \
+                f"(https://www.youtube.com/watch?v=_BD140nCDps) \u2014 {int(listing['quantity'])} nos\n\n "
 
     embed = discord.Embed(title="Dank Market", timestamp=datetime.now(), colour=discord.Colour.green())
     embed.add_field(name="Shop Items", value=desc)
@@ -17,9 +17,12 @@ def listings_embed(listings, author: discord.Member):
     return embed
 
 
-def listing_embed(listing, trader, user):
-    common_guilds = set(trader['guilds']) & set(user.data['guilds'])
+def listing_embed(listing, trader, user, trader_user, common):
+
     embed = discord.Embed(title="Listing Info", timestamp=datetime.now(), colour=discord.Colour.green())
-    embed.add_field(name="Item shop")
-    # TODO: complete this
+    embed.add_field(name="Item shop", value=f"uid: {listing['code']}\nitem: {list(items.keys())[listing['item_code']]}\n"
+                                            f"quantity: {listing['quantity']}\nprice: {listing['price']}\n "
+                                            f"lister: {trader_user.mention}", inline=False)
+    embed.add_field(name="User Info", value=f"name: {trader_user.name}\n common guilds {''.join(common)}")
+
     return embed
