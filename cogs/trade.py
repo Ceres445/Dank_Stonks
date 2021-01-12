@@ -120,9 +120,9 @@ class Trade(commands.Cog):
         author = User(ctx.guild, self.bot, ctx.author)
         await author.get_data()
         trader = await self.bot.db.get_user(record.data[2])  # user_id
-        common_guilds = self.get_common_guilds(common_guilds=set(trader['guilds']) & set(author.data['guilds']))
-        print(common_guilds)
-        await ctx.send(embed=listing_embed(record.record, trader, author, self.bot.get_user(record.data[2]), common_guilds))
+        common_guilds = await self.get_common_guilds(common_guilds=set(trader['guilds']) & set(author.data['guilds']))
+        await ctx.send(embed=listing_embed(record.record, trader, ctx.author, self.bot.get_user(record.data[2]),
+                                           common_guilds))
 
     @commands.check_any(commands.check(is_trusted), commands.check(is_staff))
     @commands.command()
@@ -141,9 +141,38 @@ class Trade(commands.Cog):
     #         await ctx.send(error)
     #     # TODO: embedify errors
 
-    def get_common_guilds(self, common_guilds):
-        common_guilds = map(self.bot.get_guild, common_guilds)
-        return [f"[{guild.name}]({guild.vanity_invite})" for guild in common_guilds if guild is not None]
+    async def get_invite(self, guild):
+        try:
+            invite = await guild.vanity_invite()
+            invite = invite.url
+        except discord.Forbidden:
+            invite = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        except discord.HTTPException:
+            invites = await guild.invites()
+            invite = [inv.url for inv in invites if inv.inviter.id == self.bot.user.id]
+            if len(invite) == 0:
+                channels = guild.channels
+                state = 0
+                for channel in channels:
+                    try:
+                        invite = await channel.create_invite(reason="Promo")
+                        state = 1
+                        break
+                    except discord.NotFound:
+                        continue
+                if not state:
+                    invite = invite.url
+                else:
+                    invite = "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+            else:
+                invite = invite[0]
+        return invite
+
+    async def get_common_guilds(self, common_guilds):
+        common_guilds = list(map(self.bot.get_guild, common_guilds))
+        if len(common_guilds) == 0:
+            return None
+        return [f"[{guild.name}]({await self.get_invite(guild)})" for guild in common_guilds if guild is not None]
 
 
 def setup(bot):
