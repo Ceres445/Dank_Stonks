@@ -46,3 +46,7 @@ class Database(object):
         else:
             prefix = record['prefix']
         return prefix
+
+    async def get_user(self, user_id):
+        record = await self.fetchrow('SELECT * FROM user_data WHERE user_id = $1', user_id)
+        return record

@@ -93,6 +93,10 @@ class Trade(commands.Cog):
     async def search(self, ctx, list_type: to_lower, *, args: listing_args = Filter(None)):
         user = User(ctx.guild, self.bot, ctx.author)
         listings = await user.get_items(list_type, args)
+        for listing in listings:
+            trader = self.bot.db.get_user(listing['user_id'])
+            if not (set(trader['guilds']) & set(user.data['guilds'])):
+                listings.remove(listing)
         await ctx.send(listings)
 
     @commands.command()
@@ -112,7 +116,9 @@ class Trade(commands.Cog):
     @commands.command()
     async def listing(self, ctx, uid: int):
         record = ItemDB.get_listing(ctx, uid)
-        await ctx.send(record)
+        author = User(ctx.author.id)
+        await author.get_data()
+        await ctx.send(record, self.bot.db.get_user(record['user_id']), author)
 
     @commands.check_any(commands.check(is_trusted), commands.check(is_staff))
     @commands.command()
