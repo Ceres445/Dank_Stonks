@@ -5,7 +5,7 @@ from discord.ext.commands import BadArgument
 from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id
 from cogs.utils.DataBase.guild import User, Filter
 from cogs.utils.checks import is_staff, is_trusted
-from cogs.utils.embeds import listings_embed, listing_embed
+from cogs.utils.embeds import listings_embed, listing_embed, command_error
 
 
 def to_lower(text):
@@ -135,11 +135,8 @@ class Trade(commands.Cog):
             text = await trader.complete_trade(item, total, quantity)
             await ctx.send(f"{trader.user.mention} {text}")
 
-    # async def cog_command_error(self, ctx, error):
-    #     print(error)
-    #     if isinstance(error, BadArgument):
-    #         await ctx.send(error)
-    #     # TODO: embedify errors
+    async def cog_command_error(self, ctx, error):
+        await ctx.send(embed=command_error(error))
 
     async def get_invite(self, guild):
         try:

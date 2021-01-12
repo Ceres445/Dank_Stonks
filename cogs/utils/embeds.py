@@ -31,3 +31,8 @@ def listing_embed(listing, trader, author, trader_user, common):
     embed.set_author(name=author.display_name, icon_url=author.avatar_url)
 
     return embed
+
+
+def command_error(error):
+    return discord.Embed(title=f"{type(error)}", colour=discord.Colour.red(),
+                         description=str(error) + "\n:link:[Support Server](https://discord.gg/cZsUq6k)")
