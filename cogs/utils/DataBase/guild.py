@@ -11,12 +11,14 @@ class Guild:
     def __init__(self, guild: discord.Guild, bot: StonksBot):
         self.bot = bot
         self.guild = guild
-        self.prefix, self.staff, self.trade, self.promo = None, None, None, None
+        self.prefix, self.staff, self.trade, self.promo, self.verified = None, None, None, None, None
 
     async def get_data(self):
         record = await self.bot.db.fetchrow("SELECT * FROM prefix WHERE guild=$1", self.guild.id)
-        self.prefix, self.staff, self.trade, self.promo = record['prefix'], record['staff'], record['trade'], record[
-            'promo']
+        self.prefix, self.staff, self.trade, \
+        self.promo, self.verified = record['prefix'], record['staff'], \
+                                    record['trade'], record['promo'], record[
+                                        'verified']
 
     async def set_attribute(self, attribute, value):
         await self.bot.db.execute(f"UPDATE prefix set {attribute} = $1", value)

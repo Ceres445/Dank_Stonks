@@ -141,6 +141,12 @@ class Setup(commands.Cog):
         await guild.set_attribute("prefix", [prefix])
         await ctx.send(f"Prefix for this server is now {prefix}")
 
+    def cog_check(self, ctx):
+        if discord.Permissions(manage_guild=True) in ctx.author.guild_permissions:
+            return True
+        else:
+            return False
+
 
 def setup(bot):
     bot.add_cog(Setup(bot))

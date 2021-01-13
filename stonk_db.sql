@@ -46,7 +46,8 @@ CREATE TABLE public.prefix (
     prefix character varying[],
     staff bigint[],
     promo bigint,
-    trade bigint[]
+    trade bigint[],
+    verified boolean DEFAULT false
 );
 
 
@@ -73,6 +74,9 @@ ALTER TABLE public.user_data OWNER TO postgres;
 
 COPY public.listed_items (code, item_code, quantity, price, user_id, list_type, "time") FROM stdin;
 3	31	2	90000	488278979900342282	sell	1609992782
+4	33	1	90000	488278979900342282	sell	1610426699
+5	34	1	900000	488278979900342282	buy	1610433921
+6	34	1	900000	503074925117046807	buy	1610433995
 \.
 
 
@@ -80,8 +84,10 @@ COPY public.listed_items (code, item_code, quantity, price, user_id, list_type, 
 -- Data for Name: prefix; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.prefix (guild, prefix, staff, promo, trade) FROM stdin;
-735451687652818985	{+}	{752412333615087616}	752412547721986070	{735451688135294998,752404728536629329}
+COPY public.prefix (guild, prefix, staff, promo, trade, verified) FROM stdin;
+735451687652818985	{+}	{752412333615087616}	743684248552079360	{743684248552079360}	f
+729930293695217694	{+}	\N	743684248552079360	{743684248552079360}	f
+715911019561746592	{+}	\N	\N	\N	f
 \.
 
 
@@ -90,7 +96,8 @@ COPY public.prefix (guild, prefix, staff, promo, trade) FROM stdin;
 --
 
 COPY public.user_data (user_id, guilds, worth, trades, trust) FROM stdin;
-488278979900342282	{735451687652818985}	0	0	0
+488278979900342282	{735451687652818985,729930293695217694}	0	0	0
+503074925117046807	{729930293695217694}	0	0	0
 \.
 
 
