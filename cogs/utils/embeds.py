@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from cogs.utils.DataBase.Items import items
@@ -18,11 +19,27 @@ def listings_embed(listings, author: discord.Member):
     return embed
 
 
-def listing_embed(listing, trader, author, trader_user, common):
+def formated(trade_items):
+    new = {}
+    for key, value in trade_items.items():
+        key = list(items.keys())[int(key)]
+        new[key] = value
+    return new
+
+
+def listing_embed(listing, trader, author, trader_user, common, trade: bool = False):
     embed = discord.Embed(title="Listing Info", timestamp=datetime.now(), colour=discord.Colour.green())
-    embed.add_field(name="Item shop",
-                    value=f"uid: {listing['code']}\nitem: {list(items.keys())[listing['item_code']]}\n"
+    if not trade:
+        embed.add_field(name="Item shop",
+                    value=f"uid: {listing['code']}\ntype: {listing['list_type']}ing\n"
+                          f"item: {list(items.keys())[listing['item_code']]}\n"
                           f"quantity: {listing['quantity']}\nprice: {listing['price']: ,}\n "
+                          f"lister: {trader_user.mention}", inline=False)
+    else:
+        embed.add_field(name="Trade shop",
+                        value=f"uid: {listing['code']}\ntype: {listing['list_type']}\n"
+                              f"item: {list(items.keys())[listing['user_item']]}\n"
+                          f"quantity: {listing['stock']}\ntrading: {formated(json.loads(listing['trade_item']))}\n "
                           f"lister: {trader_user.mention}", inline=False)
     if common is not None:
         embed.add_field(name="User Info", value=f"name: {trader_user.name}\n common guilds: {' |'.join(common)}")

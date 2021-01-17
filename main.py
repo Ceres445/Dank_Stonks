@@ -8,7 +8,9 @@ from cogs.utils.DataBase.database import Database
 
 initial = [
     'cogs.setup',
-    'cogs.trade'
+    'cogs.trade',
+    'cogs.misc',
+    'cogs.help'
 ]
 
 

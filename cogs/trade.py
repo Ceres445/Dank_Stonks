@@ -1,8 +1,10 @@
+import json
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
-from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id
+from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id, TradeConvertor, StockConverter
 from cogs.utils.DataBase.guild import User, Filter
 from cogs.utils.checks import is_staff, is_trusted
 from cogs.utils.embeds import listings_embed, listing_embed, command_error
@@ -16,7 +18,7 @@ def to_lower(text):
 
 
 def listing_args(args):
-    filters = [("i ", "item"), ("price", "p"), ("q", "quantity"), ("order", "o")]
+    filters = [("i ", "item"), ("price", "p"), ("q", "quantity"), ("order", "o"), ('t', 'trade')]
     if not args.startswith("--"):
         return Filter(None)
     filtered = [(fil.split(' ')[0], fil.split(' ')[1:]) for fil in args.split('--')[1:]]
@@ -28,6 +30,7 @@ def listing_args(args):
     quantity_type = '>='
     order_by = 'time'
     order_type = "DESC"
+    trade = False
     for i in range(4):
         if set(filters[i]) & set(key):
             try:
@@ -55,9 +58,11 @@ def listing_args(args):
                 order_by = filtered[index][0]
                 if len(filtered[index]) == 2:
                     order_type = 'ASC'
+            elif i == 4:
+                trade = True
             filtered.pop(index)
             key.pop(index)
-    return Filter(items, price, price_type, quantity, quantity_type, order_by, order_type)
+    return Filter(items, price, price_type, quantity, quantity_type, order_by, order_type, trade)
 
 
 class Trade(commands.Cog):
@@ -67,23 +72,35 @@ class Trade(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     async def market(self, ctx, args):
+        """List your items to be shown in the dank market"""
         pass
         # show some help here?
 
     @market.command()
     async def sell(self, ctx, item: Item, quantity: convert_quantity, price: convert_quantity):
+        """List items that you want to sell for money"""
         query_obj = ItemDB(self.bot, item, [quantity, price, ctx.author.id, "sell"])
         uid = await query_obj.add()
         await ctx.send(f"your product has been listed id: {uid}")
 
     @market.command()
     async def buy(self, ctx, item: Item, quantity: convert_quantity, price: convert_quantity):
+        """List item that you want to buy with money"""
         query_obj = ItemDB(self.bot, item, [quantity, price, ctx.author.id, "buy"])
         uid = await query_obj.add()
         await ctx.send(f"your product has been listed id: {uid}")
 
     @market.command()
+    async def trade(self, ctx, list_type: to_lower, user_item: StockConverter, *, items: TradeConvertor):
+        """List items that you want to trade for other items"""
+        print(items)
+        query = ItemDB(self.bot, user_item[0], [list_type, json.dumps(items), user_item[1], ctx.author.id], trade=True)
+        uid = await query.add()
+        await ctx.send(f"your product has been listed id: {uid}")
+
+    @market.command()
     async def remove(self, ctx, uid: int = None):
+        """Remove one of your listings from the market"""
         if uid is None:
             raise BadArgument
         user = User(ctx.guild, self.bot, ctx.author)
@@ -92,6 +109,7 @@ class Trade(commands.Cog):
 
     @market.command()
     async def search(self, ctx, list_type: to_lower = 'all', *, args: listing_args = Filter(None)):
+        """Search the market for items that you want to sell or need"""#TODO: add help to market
         user = User(ctx.guild, self.bot, ctx.author)
         listings = await user.get_items(list_type, args)
         for listing in listings:
@@ -102,6 +120,7 @@ class Trade(commands.Cog):
 
     @commands.command()
     async def list(self, ctx, members: commands.Greedy[discord.Member] = None, *, args: listing_args = Filter(None)):
+        """List your market or other user's market listings"""
         user = User(ctx.guild, self.bot, ctx.author)
         if members is None:
             members = [user]
@@ -112,22 +131,28 @@ class Trade(commands.Cog):
         args.user_id = 1
         for mem in members:
             listings.extend(await mem.get_listings('all', args))
-        await ctx.send(listings)  # TODO: make into embed
+        await ctx.send(embed=listings_embed(listings, ctx.author))  # TODO: make into embed
 
     @commands.command()
     async def listing(self, ctx, uid: int):
+        """Get detailed info on a market listing"""
         record = await ItemDB.get_listing(ctx, uid)
         author = User(ctx.guild, self.bot, ctx.author)
         await author.get_data()
         trader = await self.bot.db.get_user(record.data[2])  # user_id
-        common_guilds = await self.get_common_guilds(common_guilds=set(trader['guilds']) & set(author.data['guilds']))
-        await ctx.send(embed=listing_embed(record.record, trader, ctx.author, self.bot.get_user(record.data[2]),
-                                           common_guilds))
+        if trader['user_id'] != ctx.author.id:
+            common_guilds = await self.get_common_guilds(common_guilds=set(trader['guilds']) & set(author.data['guilds']))
+        else:
+            common_guilds = None
+        await ctx.send(embed=listing_embed(record.record, trader, ctx.author, self.bot.get_user(int(record.data[2])),
+                                           common_guilds, record.trade))
 
     @commands.check_any(commands.check(is_trusted), commands.check(is_staff))
-    @commands.command()
+    @commands.command(description="Can only used be trust level 10 users and guild staff")
     async def complete(self, ctx, traders: commands.Greedy[discord.Member], item: Item, total: convert_quantity,
                        quantity: convert_quantity = 1):
+        """Complete a trade between two users"""
+
         if len(traders) != 2:
             raise BadArgument
         traders = [User(ctx.guild, self.bot, trader) for trader in traders]
@@ -135,8 +160,8 @@ class Trade(commands.Cog):
             text = await trader.complete_trade(item, total, quantity)
             await ctx.send(f"{trader.user.mention} {text}")
 
-    async def cog_command_error(self, ctx, error):
-        await ctx.send(embed=command_error(error))
+    # async def cog_command_error(self, ctx, error):
+    #     await ctx.send(embed=command_error(error))
 
     async def get_invite(self, guild):
         try:

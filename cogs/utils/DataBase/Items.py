@@ -1,6 +1,7 @@
 import json
 from datetime import datetime
 
+from discord.ext import commands
 from discord.ext.commands.errors import BadArgument, CommandError
 
 with open("cogs/utils//json_files/items.json", "r") as f:
@@ -11,6 +12,39 @@ items = dict(items)
 class Incorrect_Args(CommandError):
     def __init__(self):
         pass
+
+
+class StockConverter(commands.Converter):
+
+    def __getitem__(self, item):
+        pass
+
+    async def convert(self, ctx, args) -> list:
+        if args.find('=') == -1:
+            print(args)
+            item = await Item.convert(ctx, args)
+            return [item, 1]
+        else:
+            item, quantity = args.split('=')
+            quantity = convert_quantity(quantity)
+            item = await Item.convert(ctx, item)
+            return [item, quantity]
+
+
+class TradeConvertor(commands.Converter):
+    async def convert(self, ctx, args):
+        args = args.split(' ')
+        return_items = {}
+        for arg in args:
+            if arg.find('=') != -1:
+                item, quantity = arg.split('=')
+                quantity = convert_quantity(quantity)
+                item = await Item.convert(ctx, item)
+                return_items[item.item_id] = quantity
+            else:
+                item = await Item.convert(ctx, args.strip())
+                return_items[item.item_id] = 1
+        return return_items
 
 
 def get_item(name: str) -> dict or None:
@@ -32,6 +66,7 @@ class ItemNotFound(CommandError):
 
 
 class Item:
+
     def __init__(self, bot, name, aliases):
         self.bot = bot
 
@@ -77,40 +112,56 @@ def convert_quantity(text: str) -> int:
 
 
 class ItemDB:
-    def __init__(self, bot, item, data, code=None, time=None, record=None):
+    def __init__(self, bot, item, data, code=None, time=None, record=None, trade: bool = False):
         self.bot = bot
         self.item_code = item.item_id
         self.data = data
         self.code = code
         self.time = time
         self.record = record
+        self.trade = trade
 
     async def get_code(self):
-        codes = await self.bot.db.fetch("SELECT DISTINCT code FROM listed_items ORDER BY code ASC ")
-        codes = [code['code'] for code in codes]
-        print(codes)
-        if len(codes) == 0:
+        codes = await self.bot.db.fetch("SELECT DISTINCT code FROM listed_items")
+        code = [code['code'] for code in codes]
+        codes = await self.bot.db.fetch("SELECT DISTINCT code FROM traded_items")
+        codes_trades = [code['code'] for code in codes]
+        if len(code) == 0 and len(codes_trades) == 0:
             return 1
         else:
-            return codes[-1] + 1
+            return max(code + codes_trades) + 1
 
     @classmethod
     async def get_listing(cls, ctx, code: int):
-        codes = await ctx.cog.bot.db.fetch("SELECT DISTINCT code FROM listed_items ORDER BY code ASC")
+        codes = await ctx.cog.bot.db.fetch("SELECT DISTINCT code FROM listed_items")
         if code in [cod['code'] for cod in codes]:
             listing = await ctx.cog.bot.db.fetchrow("SELECT * FROM listed_items WHERE code = $1", code)
             return cls(ctx.cog.bot, Item.get_item_id(ctx, listing['item_code']),
                        [listing['quantity'], listing['price'], listing['user_id'], listing['list_type']], code,
                        listing['time'], record=listing)
         else:
-            raise BadArgument
+            codes = await ctx.cog.bot.db.fetch("SELECT DISTINCT code from traded_items")
+            if code in [cod['code'] for cod in codes]:
+                listing = await ctx.cog.bot.db.fetchrow("SELECT * FROM traded_items WHERE code = $1", code)
+                return cls(ctx.cog.bot, Item.get_item_id(ctx, listing['user_item']),
+                           [listing['stock'], listing['trade_item'], listing['user_id'], listing['list_type']], code,
+                           listing['time'], record=listing, trade=True)
+            else:
+                raise BadArgument
 
     async def add(self):
-        if self.code is None:
-            self.code = await self.get_code()
-            query = "INSERT INTO listed_items (code, item_code, quantity, price, user_id, list_type, time) VALUES " \
-                    "($1, $2, $3, $4, $5, $6, $7) "
-            print(self.data)
-            await self.bot.db.execute(query,
-                                      self.code, self.item_code, *self.data, int(datetime.now().timestamp()))
-        return self.code
+        if not self.trade:
+            if self.code is None:
+                self.code = await self.get_code()
+                query = "INSERT INTO listed_items (code, item_code, quantity, price, user_id, list_type, time) " \
+                        "VALUES ($1, $2, $3, $4, $5, $6, $7) "
+                await self.bot.db.execute(query,
+                                          self.code, self.item_code, *self.data, int(datetime.now().timestamp()))
+            return self.code
+        else:
+            if self.code is None:
+                self.code = await self.get_code()
+                query = "INSERT INTO traded_items (code,  user_item, list_type, trade_item, stock, user_id, time) " \
+                        "VALUES ($1, $2, $3, $4, $5, $6, $7) "
+                await self.bot.db.execute(query, self.code, self.item_code, *self.data, int(datetime.now().timestamp()))
+                return self.code

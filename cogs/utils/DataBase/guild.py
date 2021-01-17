@@ -15,10 +15,9 @@ class Guild:
 
     async def get_data(self):
         record = await self.bot.db.fetchrow("SELECT * FROM prefix WHERE guild=$1", self.guild.id)
-        self.prefix, self.staff, self.trade, \
-        self.promo, self.verified = record['prefix'], record['staff'], \
-                                    record['trade'], record['promo'], record[
-                                        'verified']
+        self.prefix, self.staff, self.trade, self.promo, self.verified = record['prefix'], record['staff'], \
+                                                                         record['trade'], record['promo'], record[
+                                                                             'verified']
 
     async def set_attribute(self, attribute, value):
         await self.bot.db.execute(f"UPDATE prefix set {attribute} = $1", value)
@@ -26,7 +25,7 @@ class Guild:
 
 class Filter:
     def __init__(self, items, price='0', price_type='>=', quantity='1', quantity_type='>=', order_by='time',
-                 order_type='DESC', user_id=None):
+                 order_type='DESC', trade=False, user_id=None):
         self.items = items
         self.price = price
         self.price_type = price_type
@@ -35,12 +34,21 @@ class Filter:
         self.order_by = order_by
         self.order_type = order_type
         self.user_id = user_id
+        self.trade = trade
+
+
 
     def query_gen(self):
         if self.items is None:
             items = '(SELECT item_code FROM listed_items)'
         else:
             items = tuple(self.items) if len(self.items) > 1 else f'({self.items[0]})'
+        if self.trade:
+            if self.user_id is None:
+                return f"SELECT * FROM traded_items WHERE user_item in {items} and list_type = $1 ORDER BY time DESC"
+            else:
+                return f"SELECT * FROM traded_items WHERE user_item in {items} and" \
+                       f" list_type = $1 and user_id = $2 ORDER BY time DESC"
         if self.user_id is None:
             return f"SELECT * FROM listed_items WHERE item_code in {items}" \
                    f" and price {self.price_type} {self.price} and quantity {self.quantity_type} {self.quantity} " \
@@ -78,15 +86,18 @@ class User:
         if item.item_id not in records:
             update = "No item in listing"
         else:
-            record = self.data[records.index(item.item_id)]
+            record = self.listings[records.index(item.item_id)]
             query = "UPDATE listed_items set quantity = $1 WHERE user_id = $2"
             await self.bot.db.execute(query, record['quantity'] - quantity, self.user.id)
             update = f"New quantity {record['quantity'] - quantity} for {item}"
-        query = "UPDATE user_data set trades = $1, worth = $2, trust = $3 WHERE user_id = $1"
+        query = "UPDATE user_data set trades = $1, worth = $2, trust = $3 WHERE user_id = $4"
         trust = calc_trust(self.data['worth'] + amount, self.data['trades'] + 1, self.data['trust'])
         await self.bot.db.execute(query, self.data['trust'], self.data['worth'], trust, self.user.id)
         await self.get_data()
         return update
+
+    async def set_attribute(self, attribute, value):
+        await self.bot.db.execute(f"UPDATE user_data set {attribute} = $1", value)
 
     async def create_user(self):
         query = "INSERT INTO user_data (user_id, guilds, worth, trades, trust) VALUES ($1, $2, 0, 0, 0)"
@@ -121,8 +132,16 @@ class User:
             query = "DELETE FROM listed_items WHERE code=$1"
             await self.bot.db.execute(query, uid)
             return
+
         else:
-            raise BadArgument
+            listings = await self.get_listings('all', Filter(None, user_id=1, trade=True))
+            print(listings)
+            if int(uid) in [i['code'] for i in listings]:
+                query = "DELETE FROM traded_items WHERE code=$1"
+                await self.bot.db.execute(query, uid)
+                return
+            else:
+                raise BadArgument
 
     async def get_items(self, list_type, fil: Filter = Filter(None)):
         if self.data is None:

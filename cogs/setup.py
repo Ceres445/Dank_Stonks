@@ -142,7 +142,7 @@ class Setup(commands.Cog):
         await ctx.send(f"Prefix for this server is now {prefix}")
 
     def cog_check(self, ctx):
-        if discord.Permissions(manage_guild=True) in ctx.author.guild_permissions:
+        if discord.Permissions(manage_guild=True) <= ctx.author.guild_permissions:
             return True
         else:
             return False
