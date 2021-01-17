@@ -160,8 +160,8 @@ class Trade(commands.Cog):
             text = await trader.complete_trade(item, total, quantity)
             await ctx.send(f"{trader.user.mention} {text}")
 
-    # async def cog_command_error(self, ctx, error):
-    #     await ctx.send(embed=command_error(error))
+    async def cog_command_error(self, ctx, error):
+        await ctx.send(embed=command_error(error))
 
     async def get_invite(self, guild):
         try:

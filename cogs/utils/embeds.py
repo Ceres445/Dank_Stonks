@@ -51,5 +51,5 @@ def listing_embed(listing, trader, author, trader_user, common, trade: bool = Fa
 
 
 def command_error(error):
-    return discord.Embed(title=f"{type(error)}", colour=discord.Colour.red(),
+    return discord.Embed(title=f"{type(error).__name__}", colour=discord.Colour.red(),
                          description=str(error) + "\n:link:[Support Server](https://discord.gg/cZsUq6k)")
