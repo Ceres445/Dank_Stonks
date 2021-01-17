@@ -108,7 +108,8 @@ class Help(commands.HelpCommand):
     async def send_command_help(self, command):
         embed = self.embedify(title=self.full_command_path(command, include_prefix=True),
                               description=command.help or "*No specified command description.*")
-
+        if command.description:
+            embed.add_field(name="Note", value=command.description)
         # Testing purposes only.
         try:
             await command.can_run(self.context)
