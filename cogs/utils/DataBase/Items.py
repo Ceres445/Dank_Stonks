@@ -31,6 +31,22 @@ class StockConverter(commands.Converter):
             return [item, quantity]
 
 
+class CompleteConvertor(commands.Converter):
+    def __getitem__(self, item):
+        pass
+
+    async def convert(self, ctx, argument):
+        args = argument.split(', ')
+        if len(args) == 1:
+            typer = 'money'
+            trader = await StockConverter().convert(ctx, args[0])
+            return typer, trader
+        else:
+            trader1 = await TradeConvertor().convert(ctx, args[0])
+            trader2 = await TradeConvertor().convert(ctx, args[1])
+            return 'item', trader1, trader2
+
+
 class TradeConvertor(commands.Converter):
     async def convert(self, ctx, args):
         args = args.split(' ')
