@@ -44,6 +44,26 @@ class Help(commands.HelpCommand):
                 names.append(f'*{command.name}*')
         return names
 
+    async def get_command_help(self, group, context=None):
+        if context:
+            self.context = context
+        embed = self.embedify(title=self.full_command_path(group),
+                              description=group.short_doc or "*No special description*")
+
+        filtered = await self.filter_commands(group.commands, sort=True, key=lambda c: c.name)
+        if filtered:
+            for command in filtered:
+                name = self.full_command_path(command)
+                if isinstance(command, commands.Group):
+                    name = 'Group: ' + name
+
+                embed.add_field(name=name, value=command.help or "*No specified command description.*", inline=False)
+
+        if len(embed.fields) == 0:
+            embed.add_field(name='No commands', value='This group has no commands?')
+
+        return embed
+
     def full_command_path(self, command, include_prefix: bool = False):
         string = f'{command.qualified_name} {command.signature}'
 
@@ -74,21 +94,7 @@ class Help(commands.HelpCommand):
         await self.context.send(embed=embed)
 
     async def send_group_help(self, group):
-        embed = self.embedify(title=self.full_command_path(group),
-                              description=group.short_doc or "*No special description*")
-
-        filtered = await self.filter_commands(group.commands, sort=True, key=lambda c: c.name)
-        if filtered:
-            for command in filtered:
-                name = self.full_command_path(command)
-                if isinstance(command, commands.Group):
-                    name = 'Group: ' + name
-
-                embed.add_field(name=name, value=command.help or "*No specified command description.*", inline=False)
-
-        if len(embed.fields) == 0:
-            embed.add_field(name='No commands', value='This group has no commands?')
-
+        embed = await self.get_command_help(group)
         await self.context.send(embed=embed)
 
     async def send_cog_help(self, cog):

@@ -4,9 +4,12 @@ from datetime import datetime
 from discord.ext import commands
 from discord.ext.commands.errors import BadArgument, CommandError
 
-with open("cogs/utils//json_files/items.json", "r") as f:
+with open("cogs/utils/json_files/items.json", "r") as f:
     items = json.load(f)
 items = dict(items)
+with open("cogs/utils/json_files/item_convertor.json", "r") as f:
+    item_convertor = json.load(f)
+item_convertor = dict(item_convertor)
 
 
 class Incorrect_Args(CommandError):

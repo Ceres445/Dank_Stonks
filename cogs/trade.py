@@ -4,12 +4,13 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
+from cogs.menu import ListItem, MarketMenu
 from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id, \
     TradeConvertor, StockConverter, CompleteConvertor
 from cogs.utils.DataBase.guild import User, Filter
 from cogs.utils.DataBase.trades import Trades
 from cogs.utils.checks import is_staff, is_trusted
-from cogs.utils.embeds import listings_embed, listing_embed, command_error
+from cogs.utils.embeds import listing_embed, command_error
 
 
 def to_lower(text):
@@ -21,9 +22,7 @@ def to_lower(text):
 
 def listing_args(args):
     filters = [("i ", "item"), ("price", "p"), ("q", "quantity"), ("order", "o"), ('t', 'trade')]
-    if not args.startswith("--"):
-        return Filter(None)
-    filtered = [(fil.split(' ')[0], fil.split(' ')[1:]) for fil in args.split('--')[1:]]
+    filtered = [(fil.split(' ')[0], fil.split(' ')[1:]) for fil in args.split(', ')[1:]]
     key = [fil[0] for fil in filtered]
     items = None
     price = '0'
@@ -73,10 +72,14 @@ class Trade(commands.Cog):
         self.bot = bot
 
     @commands.group(invoke_without_command=True)
-    async def market(self, ctx, args):
+    async def market(self, ctx):
         """List your items to be shown in the dank market"""
         pass
-        # show some help here?
+        fil = Filter(None, order_by='price')
+        user = User(ctx.guild, self.bot, ctx.author)
+        listings = await user.get_items('all', fil)
+        pages = MarketMenu(listings[:5], ctx, f"Costliest items in the market")
+        await pages.start(ctx)
 
     @market.command()
     async def sell(self, ctx, item: Item, quantity: convert_quantity, price: convert_quantity):
@@ -110,15 +113,18 @@ class Trade(commands.Cog):
         await ctx.send("removed listing")
 
     @market.command()
-    async def search(self, ctx, list_type: to_lower = 'all', *, args: listing_args = Filter(None)):
+    async def search(self, ctx, list_type: to_lower = 'all', *, search_query: str = None, search_value: str = None):
+        # TODO: add multiple queries
         """Search the market for items that you want to sell or need"""  # TODO: add help to market
         user = User(ctx.guild, self.bot, ctx.author)
+        args = listing_args(search_query + search_value)
         listings = await user.get_items(list_type, args)
         for listing in listings:
             trader = await self.bot.db.get_user(listing['user_id'])
             if not (set(trader['guilds']) & set(user.data['guilds'])):
                 listings.remove(listing)
-        await ctx.send(embed=listings_embed(listings, ctx.author))
+        pages = ListItem(listings, ctx, f"Search results")
+        await pages.start(ctx)
 
     @commands.command()
     async def list(self, ctx, members: commands.Greedy[discord.Member] = None, *, args: listing_args = Filter(None)):
@@ -133,7 +139,12 @@ class Trade(commands.Cog):
         args.user_id = 1
         for mem in members:
             listings.extend(await mem.get_listings('all', args))
-        await ctx.send(embed=listings_embed(listings, ctx.author))
+        if len(members) == 1:
+            members = members[0].user.mention
+        else:
+            members = ", ".join([member.user.mention for member in members])
+        pages = ListItem(listings, ctx, f"Listings of {members}")
+        await pages.start(ctx)
 
     @commands.command()
     async def listing(self, ctx, uid: int):

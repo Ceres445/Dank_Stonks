@@ -36,8 +36,6 @@ class Filter:
         self.user_id = user_id
         self.trade = trade
 
-
-
     def query_gen(self):
         if self.items is None:
             items = '(SELECT item_code FROM listed_items)'
