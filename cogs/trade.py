@@ -4,8 +4,10 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 
-from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id, TradeConvertor, StockConverter
+from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id, \
+    TradeConvertor, StockConverter, CompleteConvertor
 from cogs.utils.DataBase.guild import User, Filter
+from cogs.utils.DataBase.trades import Trades
 from cogs.utils.checks import is_staff, is_trusted
 from cogs.utils.embeds import listings_embed, listing_embed, command_error
 
@@ -109,7 +111,7 @@ class Trade(commands.Cog):
 
     @market.command()
     async def search(self, ctx, list_type: to_lower = 'all', *, args: listing_args = Filter(None)):
-        """Search the market for items that you want to sell or need"""#TODO: add help to market
+        """Search the market for items that you want to sell or need"""  # TODO: add help to market
         user = User(ctx.guild, self.bot, ctx.author)
         listings = await user.get_items(list_type, args)
         for listing in listings:
@@ -131,7 +133,7 @@ class Trade(commands.Cog):
         args.user_id = 1
         for mem in members:
             listings.extend(await mem.get_listings('all', args))
-        await ctx.send(embed=listings_embed(listings, ctx.author))  # TODO: make into embed
+        await ctx.send(embed=listings_embed(listings, ctx.author))
 
     @commands.command()
     async def listing(self, ctx, uid: int):
@@ -141,24 +143,48 @@ class Trade(commands.Cog):
         await author.get_data()
         trader = await self.bot.db.get_user(record.data[2])  # user_id
         if trader['user_id'] != ctx.author.id:
-            common_guilds = await self.get_common_guilds(common_guilds=set(trader['guilds']) & set(author.data['guilds']))
+            common_guilds = await self.get_common_guilds(
+                common_guilds=set(trader['guilds']) & set(author.data['guilds']))
         else:
             common_guilds = None
         await ctx.send(embed=listing_embed(record.record, trader, ctx.author, self.bot.get_user(int(record.data[2])),
                                            common_guilds, record.trade))
 
+    async def completer(self, ctx, traders, items, total, verified):
+        trade_type = items[0]
+        items = items[1:]
+        if trade_type == 'money':
+            for trader in traders:
+                items = items[0]
+                text = await trader.complete_trade(items[0], total, items[1])
+
+                await ctx.send(f"{trader.user.mention} {text}")
+            items = dict({items[0]: items[1]})
+        else:
+            for trader in enumerate(traders):
+                item, quantity = max(items[trader[0], lambda x: x.value()])
+                text = await trader[1].complete_trade(item, total, quantity)
+                await ctx.send(f"{trader[1].user.mention} {text}")
+            items[0].update(items[1])
+        trade = Trades(self.bot, [traders[0].user.id, traders[1].user.id, trade_type, json.dumps(items)],
+                       verified=verified)
+        await trade.add()
+
     @commands.check_any(commands.check(is_trusted), commands.check(is_staff))
-    @commands.command(description="Can only used be trust level 10 users and guild staff")
-    async def complete(self, ctx, traders: commands.Greedy[discord.Member], item: Item, total: convert_quantity,
-                       quantity: convert_quantity = 1):
+    @commands.command(description="Can only used be trust level 10 users and guild staff", aliases=['com', 'cplt'])
+    async def complete(self, ctx, traders: commands.Greedy[discord.Member], total: convert_quantity, *,
+                       items: CompleteConvertor):
         """Complete a trade between two users"""
 
         if len(traders) != 2:
             raise BadArgument
         traders = [User(ctx.guild, self.bot, trader) for trader in traders]
-        for trader in traders:
-            text = await trader.complete_trade(item, total, quantity)
-            await ctx.send(f"{trader.user.mention} {text}")
+        await self.completer(ctx, traders, items, total, True)
+
+    @commands.command(aliases=['my', 'cmy'])
+    async def completemy(self, ctx, trader: discord.Member, total: convert_quantity, *, items: CompleteConvertor):
+        traders = [User(ctx.guild, self.bot, trader), User(ctx.guild, self.bot, ctx.author)]
+        await self.completer(ctx, traders, items, total, False)
 
     async def cog_command_error(self, ctx, error):
         await ctx.send(embed=command_error(error))
