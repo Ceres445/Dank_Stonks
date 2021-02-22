@@ -15,9 +15,9 @@ class Guild:
 
     async def get_data(self):
         record = await self.bot.db.fetchrow("SELECT * FROM prefix WHERE guild=$1", self.guild.id)
-        self.prefix, self.staff, self.trade, self.promo, self.verified = record['prefix'], record['staff'], \
-                                                                         record['trade'], record['promo'], record[
-                                                                             'verified']
+        self.prefix, self.staff, self.trade, self.promo, \
+        self.verified = record['prefix'], record['staff'], record['trade'], record['promo'], record[
+            'verified']
 
     async def set_attribute(self, attribute, value):
         await self.bot.db.execute(f"UPDATE prefix set {attribute} = $1", value)

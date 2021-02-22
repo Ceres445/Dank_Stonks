@@ -1,7 +1,6 @@
 import json
 from datetime import datetime
 
-from discord.ext import commands
 from discord.ext.commands.errors import BadArgument, CommandError
 
 with open("cogs/utils/json_files/items.json", "r") as f:
@@ -10,60 +9,6 @@ items = dict(items)
 with open("cogs/utils/json_files/item_convertor.json", "r") as f:
     item_convertor = json.load(f)
 item_convertor = dict(item_convertor)
-
-
-class Incorrect_Args(CommandError):
-    def __init__(self):
-        pass
-
-
-class StockConverter(commands.Converter):
-
-    def __getitem__(self, item):
-        pass
-
-    async def convert(self, ctx, args) -> list:
-        if args.find('=') == -1:
-            print(args)
-            item = await Item.convert(ctx, args)
-            return [item, 1]
-        else:
-            item, quantity = args.split('=')
-            quantity = convert_quantity(quantity)
-            item = await Item.convert(ctx, item)
-            return [item, quantity]
-
-
-class CompleteConvertor(commands.Converter):
-    def __getitem__(self, item):
-        pass
-
-    async def convert(self, ctx, argument):
-        args = argument.split(', ')
-        if len(args) == 1:
-            typer = 'money'
-            trader = await StockConverter().convert(ctx, args[0])
-            return typer, trader
-        else:
-            trader1 = await TradeConvertor().convert(ctx, args[0])
-            trader2 = await TradeConvertor().convert(ctx, args[1])
-            return 'item', trader1, trader2
-
-
-class TradeConvertor(commands.Converter):
-    async def convert(self, ctx, args):
-        args = args.split(' ')
-        return_items = {}
-        for arg in args:
-            if arg.find('=') != -1:
-                item, quantity = arg.split('=')
-                quantity = convert_quantity(quantity)
-                item = await Item.convert(ctx, item)
-                return_items[item.item_id] = quantity
-            else:
-                item = await Item.convert(ctx, args.strip())
-                return_items[item.item_id] = 1
-        return return_items
 
 
 def get_item(name: str) -> dict or None:
@@ -113,25 +58,9 @@ class Item:
         return self.name
 
 
-def convert_quantity(text: str) -> int:
-    allowed_symbols = "1234567890ek"
-    try:
-        new = eval(text)
-        return new
-    except SyntaxError:
-        for i in text:
-            if i not in allowed_symbols:
-                raise BadArgument
-        new = text.replace('k', "*1e3")
-        try:
-            new = eval(new)
-            return new
-        except SyntaxError:
-            raise BadArgument
-
-
 class ItemDB:
     def __init__(self, bot, item, data, code=None, time=None, record=None, trade: bool = False):
+        # TODO: use auto incrementing primary keys and change table structure for trades
         self.bot = bot
         self.item_code = item.item_id
         self.data = data

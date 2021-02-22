@@ -5,65 +5,14 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument
 
 from cogs.menu import ListItem, MarketMenu
-from cogs.utils.DataBase.Items import Item, convert_quantity, ItemDB, get_item, item_id, \
-    TradeConvertor, StockConverter, CompleteConvertor
+from cogs.utils.DataBase.Items import Item, ItemDB
+from cogs.utils.errors import BadListType
+from cogs.utils.functions import convert_quantity, to_lower, listing_args, StockConverter, CompleteConvertor, \
+    TradeConvertor
 from cogs.utils.DataBase.guild import User, Filter
 from cogs.utils.DataBase.trades import Trades
 from cogs.utils.checks import is_staff, is_trusted
 from cogs.utils.embeds import listing_embed, command_error
-
-
-def to_lower(text):
-    if text.lower() in ('sell', 'buy'):
-        return text.lower()
-    else:
-        raise BadArgument
-
-
-def listing_args(args):
-    filters = [("i ", "item"), ("price", "p"), ("q", "quantity"), ("order", "o"), ('t', 'trade')]
-    filtered = [(fil.split(' ')[0], fil.split(' ')[1:]) for fil in args.split(', ')[1:]]
-    key = [fil[0] for fil in filtered]
-    items = None
-    price = '0'
-    price_type = '>'
-    quantity = '1'
-    quantity_type = '>='
-    order_by = 'time'
-    order_type = "DESC"
-    trade = False
-    for i in range(4):
-        if set(filters[i]) & set(key):
-            try:
-                index = key.index(filters[i][0])
-            except ValueError:
-                index = key.index(filters[i][1])
-            if i == 0:
-                items = [item_id(get_item(el)) for el in filtered[index][1]]
-
-            elif i == 1:
-                if len(filtered[index]) == 1:
-                    price = convert_quantity(filtered[index][0])
-                    price_type = '='
-                elif len(filtered[index]) == 2:
-                    price_type = filtered[index][0]
-                    price = str(convert_quantity(filtered[index][1]))
-            elif i == 2:
-                if len(filtered[index]) == 1:
-                    quantity = convert_quantity(filtered[index][0])
-                    quantity_type = '='
-                elif len(filtered[index]) == 2:
-                    quantity_type = filtered[index][0]
-                    quantity = str(convert_quantity(filtered[index][1]))
-            elif i == 3:
-                order_by = filtered[index][0]
-                if len(filtered[index]) == 2:
-                    order_type = 'ASC'
-            elif i == 4:
-                trade = True
-            filtered.pop(index)
-            key.pop(index)
-    return Filter(items, price, price_type, quantity, quantity_type, order_by, order_type, trade)
 
 
 class Trade(commands.Cog):
@@ -113,11 +62,14 @@ class Trade(commands.Cog):
         await ctx.send("removed listing")
 
     @market.command()
-    async def search(self, ctx, list_type: to_lower = 'all', *, search_query: str = None, search_value: str = None):
-        # TODO: add multiple queries
-        """Search the market for items that you want to sell or need"""  # TODO: add help to market
+    async def search(self, ctx, list_type: to_lower = 'all', items: str = None, *, query: str = None):
+        """Search the market for items that you want to sell or need"""  # TODO: add help to market(filter)
         user = User(ctx.guild, self.bot, ctx.author)
-        args = listing_args(search_query + search_value)
+        if items.lower() == "none":
+            items = None
+        else:
+            items = [Item.convert(ctx, item) for item in items.split(',')]
+        args = listing_args(items, query)
         listings = await user.get_items(list_type, args)
         for listing in listings:
             trader = await self.bot.db.get_user(listing['user_id'])
@@ -192,12 +144,15 @@ class Trade(commands.Cog):
         traders = [User(ctx.guild, self.bot, trader) for trader in traders]
         await self.completer(ctx, traders, items, total, True)
 
-    @commands.command(aliases=['my', 'cmy'])
-    async def completemy(self, ctx, trader: discord.Member, total: convert_quantity, *, items: CompleteConvertor):
+    @commands.command(aliases=['cmy'])
+    async def complete_my(self, ctx, trader: discord.Member, total: convert_quantity, *, items: CompleteConvertor):
         traders = [User(ctx.guild, self.bot, trader), User(ctx.guild, self.bot, ctx.author)]
         await self.completer(ctx, traders, items, total, False)
 
     async def cog_command_error(self, ctx, error):
+        if isinstance(error, BadListType):
+            await ctx.send(embed=command_error(BadListType(f"list type has to be one of `'sell', 'buy', 'all'`.\n "
+                                                           f"use {ctx.prefix}help {ctx.command} for more info")))
         await ctx.send(embed=command_error(error))
 
     async def get_invite(self, guild):

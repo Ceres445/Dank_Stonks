@@ -5,6 +5,7 @@ from discord.ext.commands import BadArgument
 
 class Trades:
     def __init__(self, bot, data, verified: bool = False, record=None):
+        # TODO: rewrite table structure for traded items/money
         self.bot = bot
         self.data = data
         self.verified = verified
