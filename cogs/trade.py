@@ -100,6 +100,7 @@ class Trade(commands.Cog):
 
     @commands.command()
     async def listing(self, ctx, uid: int):
+        #TODO: view guild settings
         """Get detailed info on a market listing"""
         record = await ItemDB.get_listing(ctx, uid)
         author = User(ctx.guild, self.bot, ctx.author)

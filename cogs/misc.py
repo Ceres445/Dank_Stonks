@@ -11,7 +11,6 @@ class Misc(commands.Cog):
     @commands.is_owner()
     @commands.command()
     async def verify(self, ctx, verified: bool = True):
-        print("hi")
         guild = Guild(ctx.guild, self.bot)
         await guild.set_attribute("verified", verified)
         await ctx.send(f"{'Unv' if not verified else 'V'}erified {ctx.guild.name}")

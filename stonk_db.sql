@@ -51,7 +51,7 @@ CREATE TABLE public.prefix (
 );
 
 
-ALTER TABLE public.prefix OWNER TO postgres;
+ALTER TABLE public.guild_info OWNER TO postgres;
 
 --
 -- Name: traded_items; Type: TABLE; Schema: public; Owner: postgres
@@ -145,7 +145,7 @@ COPY public.listed_items (code, item_code, quantity, price, user_id, list_type, 
 -- Data for Name: prefix; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.prefix (guild, prefix, staff, promo, trade, verified) FROM stdin;
+COPY public.guild_info (guild, guild_info, staff, promo, trade, verified) FROM stdin;
 735451687652818985	{+}	{752412333615087616}	743684248552079360	{743684248552079360}	t
 729930293695217694	{+}	\N	743684248552079360	{743684248552079360}	t
 715911019561746592	{+}	\N	\N	\N	t
@@ -202,7 +202,7 @@ ALTER TABLE ONLY public.listed_items
 -- Name: prefix prefix_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.prefix
+ALTER TABLE ONLY public.guild_info
     ADD CONSTRAINT prefix_pkey PRIMARY KEY (guild);
 
 

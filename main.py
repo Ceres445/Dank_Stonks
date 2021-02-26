@@ -47,11 +47,15 @@ class StonksBot(commands.AutoShardedBot):
         elif message.content == f'<@!{self.user.id}>' or message.content == f'<@{self.user.id}>':
             prefix = await self.get_prefix(message)
             await ctx.send(f"use the prefix` {prefix[0]}`")
+        await self.wait_until_ready()
         await self.process_commands(message)
 
     async def on_ready(self):
         print(f'Successfully logged in as {self.user}\nSharded to {len(self.guilds)} guilds')
         await self.change_presence(status=discord.Status.online, activity=discord.Game(name='use the prefix "+"'))
+        # setup = self.get_command('setup')
+        # setup.remove_command('channel')
+        # print('removed setup channel')
 
     @classmethod
     async def setup(cls):

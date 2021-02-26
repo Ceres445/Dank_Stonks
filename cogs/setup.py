@@ -19,7 +19,6 @@ class channel_menu(menus.Menu):
 
     @menus.button('\N{SHOPPING TROLLEY}')
     async def promo(self, payload):
-        print('added')
         await self.message.edit(content="mention the channel in which u want trade promotions to take place (make "
                                         "sure the bot has perms to send there)")
 
@@ -80,42 +79,45 @@ class Setup(commands.Cog):
         await guild.get_data()
         if args is None:
             await ctx.send("Welcome to setup manager")  # TODO: make into embed
-            desc = f"guild id: {guild.guild.id}\nchannels: {guild.trade, guild.promo}\nstaff: {guild.staff}"
+            desc = f"guild id: {guild.guild.id}\n\nstaff: {guild.staff}"
             await ctx.send(desc)
 
     @setup.command()
     async def staff(self, ctx, staff: discord.Role):
+        """Set the staff role for the guild"""
         guild = Guild(ctx.guild, self.bot)
         await guild.get_data()
         await guild.set_attribute('staff', [staff.id])
         await ctx.send(f"Successfully set staff role to {staff.name}")
 
-    @setup.command()
-    async def channel(self, ctx):
-        guild = Guild(ctx.guild, self.bot)
-        m = await channel_menu(ctx).starter(ctx)
-        if m['promo'] is not None:
-            await guild.set_attribute('promo', m['promo'].id)
-            await ctx.send(f"Successfully set promo to <#   {m['promo'].mention}>")
-        if m['trade'] is not None:
-
-            await guild.set_attribute('trade', [a.id for a in m['trade']])
-            trade_mention = [f"<#{i}>" for i in m['trade']]
-            await ctx.send(f"Successfully set trade to {trade_mention}")
+    # @setup.command()
+    # async def channel(self, ctx):
+    #     """set the commands and promo channel"""
+    #     guild = Guild(ctx.guild, self.bot)
+    #     m = await channel_menu(ctx).starter(ctx)
+    #     if m['promo'] is not None:
+    #         await guild.set_attribute('promo', m['promo'].id)
+    #         await ctx.send(f"Successfully set promo to <#   {m['promo'].mention}>")
+    #     if m['trade'] is not None:
+    #
+    #         await guild.set_attribute('trade', [a.id for a in m['trade']])
+    #         trade_mention = [f"<#{i}>" for i in m['trade']]
+    #         await ctx.send(f"Successfully set trade to {trade_mention}")
 
     @commands.group(name='prefix', invoke_without_command=True)
     async def prefix(self, ctx):
+        """Manage the prefix of the bot in the guild"""
         guild = Guild(ctx.guild, self.bot)
         await guild.get_data()
         prefixes = guild.prefix
         desc = ""
-        print(prefixes)
         for index, prefix in enumerate(prefixes):
             desc += f"{index+1}. {prefix}\n"
         await ctx.send(f"```{desc}```")
 
     @prefix.command()
     async def add(self, ctx, new: str):
+        """Add a prefix for the bot"""
         guild = Guild(ctx.guild, self.bot)
         await guild.get_data()
         if new in guild.prefix:
@@ -127,10 +129,12 @@ class Setup(commands.Cog):
 
     @prefix.command(aliases=['rm'])
     async def remove(self, ctx, rm: str):
+        """remove a prefix from the bot"""
         guild = Guild(ctx.guild, self.bot)
         await guild.get_data()
         if rm in guild.prefix:
-            await guild.set_attribute("prefix", guild.prefix.remove(rm))
+            guild.prefix.remove(rm)
+            await guild.set_attribute("prefix", guild.prefix)
             await ctx.send(f"{rm} removed")
         else:
             await ctx.send("I do not have this prefix registered.")

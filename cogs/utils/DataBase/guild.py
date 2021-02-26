@@ -11,16 +11,16 @@ class Guild:
     def __init__(self, guild: discord.Guild, bot: StonksBot):
         self.bot = bot
         self.guild = guild
-        self.prefix, self.staff, self.trade, self.promo, self.verified = None, None, None, None, None
+        self.prefix, self.staff, self.verified = None, None, None
 
     async def get_data(self):
-        record = await self.bot.db.fetchrow("SELECT * FROM prefix WHERE guild=$1", self.guild.id)
-        self.prefix, self.staff, self.trade, self.promo, \
-        self.verified = record['prefix'], record['staff'], record['trade'], record['promo'], record[
+        record = await self.bot.db.fetchrow("SELECT * FROM guild_info WHERE guild=$1", self.guild.id)
+        self.prefix, self.staff,  \
+        self.verified = record['prefix'], record['staff'], record[
             'verified']
 
     async def set_attribute(self, attribute, value):
-        await self.bot.db.execute(f"UPDATE prefix set {attribute} = $1", value)
+        await self.bot.db.execute(f"UPDATE guild_info set {attribute} = $1" , value)
 
 
 class Filter:
@@ -133,7 +133,6 @@ class User:
 
         else:
             listings = await self.get_listings('all', Filter(None, user_id=1, trade=True))
-            print(listings)
             if int(uid) in [i['code'] for i in listings]:
                 query = "DELETE FROM traded_items WHERE code=$1"
                 await self.bot.db.execute(query, uid)

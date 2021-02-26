@@ -89,7 +89,6 @@ class StockConverter(commands.Converter):
 
     async def convert(self, ctx, args) -> list:
         if args.find('=') == -1:
-            print(args)
             item = await Item.convert(ctx, args)
             return [item, 1]
         else:
