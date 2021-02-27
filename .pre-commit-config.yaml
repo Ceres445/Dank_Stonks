@@ -9,8 +9,9 @@ repos:
 
 -   repo: local
     hooks:
-    -   id: clean_cache
+    -   id: pyclean
         name: pyclean
-        entry: python -m pyclean .
-        language: python
+        entry: pyclean .
+        language: system
+        types: [python]
         verbose: true
