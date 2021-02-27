@@ -11,6 +11,6 @@ repos:
     hooks:
     -   id: pyclean
         name: pyclean
-        entry: pyclean
+        entry: pyclean .
         language: system
-        types: [python]
+        types: [directory]
