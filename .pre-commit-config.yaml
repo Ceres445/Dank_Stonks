@@ -14,4 +14,3 @@ repos:
         entry: pyclean .
         language: system
         types: [python]
-        verbose: true
