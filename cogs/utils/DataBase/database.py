@@ -39,9 +39,9 @@ class Database(object):
     # basic methods
 
     async def get_prefix(self, guild) -> list:
-        record = await self.fetchrow('SELECT * FROM prefix WHERE guild=$1', guild.id)
+        record = await self.fetchrow('SELECT * FROM guild_info WHERE guild=$1', guild.id)
         if record is None:
-            await self.execute('INSERT INTO prefix (guild, guild_info) VALUES ($1, $2)', guild.id, ['+'])
+            await self.execute('INSERT INTO guild_info (guild, guild_info) VALUES ($1, $2)', guild.id, ['+'])
             prefix = ['+']
         else:
             prefix = record['prefix']
