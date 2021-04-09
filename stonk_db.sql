@@ -68,7 +68,7 @@ CREATE TABLE public.traded_items (
 );
 
 
-ALTER TABLE public.traded_items OWNER TO postgres;
+ALTER TABLE public.listed_trades OWNER TO postgres;
 
 --
 -- Name: trades; Type: TABLE; Schema: public; Owner: postgres
@@ -85,7 +85,7 @@ CREATE TABLE public.trades (
 );
 
 
-ALTER TABLE public.trades OWNER TO postgres;
+ALTER TABLE public.completed_trades OWNER TO postgres;
 
 --
 -- Name: trades_code_seq; Type: SEQUENCE; Schema: public; Owner: postgres
@@ -106,7 +106,7 @@ ALTER TABLE public.trades_code_seq OWNER TO postgres;
 -- Name: trades_code_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
-ALTER SEQUENCE public.trades_code_seq OWNED BY public.trades.code;
+ALTER SEQUENCE public.trades_code_seq OWNED BY public.completed_trades.code;
 
 
 --
@@ -128,7 +128,7 @@ ALTER TABLE public.user_data OWNER TO postgres;
 -- Name: trades code; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.trades ALTER COLUMN code SET DEFAULT nextval('public.trades_code_seq'::regclass);
+ALTER TABLE ONLY public.completed_trades ALTER COLUMN code SET DEFAULT nextval('public.trades_code_seq'::regclass);
 
 
 --
@@ -157,7 +157,7 @@ COPY public.guild_info (guild, guild_info, staff, promo, trade, verified) FROM s
 -- Data for Name: traded_items; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.traded_items (code, list_type, user_item, trade_item, stock, user_id, "time") FROM stdin;
+COPY public.listed_trades (code, list_type, user_item, trade_item, stock, user_id, "time") FROM stdin;
 9	sell	33	{"2": 1}	15	488278979900342282	1610864161
 12	sell	33	{"39": 1}	15	488278979900342282	1610864966
 13	sell	33	{"39": 1, "31": 5}	15	488278979900342282	1610865052
@@ -168,7 +168,7 @@ COPY public.traded_items (code, list_type, user_item, trade_item, stock, user_id
 -- Data for Name: trades; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.trades (code, user_1, user_2, type, info, verified, "time") FROM stdin;
+COPY public.completed_trades (code, user_1, user_2, type, info, verified, "time") FROM stdin;
 \.
 
 
@@ -210,7 +210,7 @@ ALTER TABLE ONLY public.guild_info
 -- Name: traded_items traded_items_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.traded_items
+ALTER TABLE ONLY public.listed_trades
     ADD CONSTRAINT traded_items_pk PRIMARY KEY (code);
 
 
@@ -218,7 +218,7 @@ ALTER TABLE ONLY public.traded_items
 -- Name: trades trades_pk; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.trades
+ALTER TABLE ONLY public.completed_trades
     ADD CONSTRAINT trades_pk PRIMARY KEY (code);
 
 

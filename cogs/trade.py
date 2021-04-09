@@ -5,7 +5,7 @@ from discord.ext import commands
 from discord.ext.commands import BadArgument
 
 from cogs.menu import ListItem, MarketMenu
-from cogs.utils.DataBase.Items import Item, ItemDB
+from cogs.utils.DataBase.Items import Item, ItemDB, TradeDB
 from cogs.utils.errors import BadListType
 from cogs.utils.functions import convert_quantity, to_lower, listing_args, StockConverter, CompleteConvertor, \
     TradeConvertor
@@ -47,8 +47,7 @@ class Trade(commands.Cog):
     @market.command()
     async def trade(self, ctx, list_type: to_lower, user_item: StockConverter, *, items: TradeConvertor):
         """List items that you want to trade for other items"""
-        print(items)
-        query = ItemDB(self.bot, user_item[0], [list_type, json.dumps(items), user_item[1], ctx.author.id], trade=True)
+        query = TradeDB(self.bot, list_type, user_item, items, ctx.author)
         uid = await query.add()
         await ctx.send(f"your product has been listed id: {uid}")
 
@@ -100,7 +99,7 @@ class Trade(commands.Cog):
 
     @commands.command()
     async def listing(self, ctx, uid: int):
-        #TODO: view guild settings
+        # TODO: view guild settings
         """Get detailed info on a market listing"""
         record = await ItemDB.get_listing(ctx, uid)
         author = User(ctx.guild, self.bot, ctx.author)

@@ -43,9 +43,9 @@ class Filter:
             items = tuple(self.items) if len(self.items) > 1 else f'({self.items[0]})'
         if self.trade:
             if self.user_id is None:
-                return f"SELECT * FROM traded_items WHERE user_item in {items} and list_type = $1 ORDER BY time DESC"
+                return f"SELECT * FROM listed_trades WHERE user_item in {items} and list_type = $1 ORDER BY time DESC"
             else:
-                return f"SELECT * FROM traded_items WHERE user_item in {items} and" \
+                return f"SELECT * FROM listed_trades WHERE user_item in {items} and" \
                        f" list_type = $1 and user_id = $2 ORDER BY time DESC"
         if self.user_id is None:
             return f"SELECT * FROM listed_items WHERE item_code in {items}" \
@@ -134,7 +134,7 @@ class User:
         else:
             listings = await self.get_listings('all', Filter(None, user_id=1, trade=True))
             if int(uid) in [i['code'] for i in listings]:
-                query = "DELETE FROM traded_items WHERE code=$1"
+                query = "DELETE FROM listed_trades WHERE code=$1"
                 await self.bot.db.execute(query, uid)
                 return
             else:

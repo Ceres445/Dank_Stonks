@@ -36,6 +36,14 @@ class Database(object):
             async with self._pool.acquire() as con:
                 return await con.execute(query, *args, timeout=self.timeout)
 
+    async def execute_many(self, query, *args):
+        returner = []
+        async with self._rate_limit:
+            async with self._pool.acquire() as con:
+                for arg in args:
+                    returner.append(await con.execute(query, *arg, timeout=self.timeout))
+        return returner
+
     # basic methods
 
     async def get_prefix(self, guild) -> list:

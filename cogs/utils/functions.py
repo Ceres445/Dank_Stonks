@@ -117,14 +117,14 @@ class CompleteConvertor(commands.Converter):
 class TradeConvertor(commands.Converter):
     async def convert(self, ctx, args):
         args = args.split(' ')
-        return_items = {}
+        return_items = []
         for arg in args:
             if arg.find('=') != -1:
                 item, quantity = arg.split('=')
                 quantity = convert_quantity(quantity)
                 item = await Item.convert(ctx, item)
-                return_items[item.item_id] = quantity
+                return_items.append((item, quantity))
             else:
                 item = await Item.convert(ctx, args.strip())
-                return_items[item.item_id] = 1
+                return_items.append((item, 1))
         return return_items
